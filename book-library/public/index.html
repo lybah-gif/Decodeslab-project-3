@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> My Book Library</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
+        
+        h1 span {
+            color: #764ba2;
+        }
+        
+        form {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        h3 {
+            color: #555;
+            margin-bottom: 15px;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        input {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            width: 100%;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #764ba2;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(118, 75, 162, 0.4);
+        }
+        
+        .book-list {
+            display: grid;
+            gap: 15px;
+        }
+        
+        .book-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #764ba2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .book-item:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .book-info h4 {
+            color: #333;
+            font-size: 1.2rem;
+        }
+        
+        .book-info p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .delete-btn:hover {
+            background: #c82333;
+        }
+        
+        .empty-msg {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            font-size: 1.2rem;
+        }
+        
+        .count {
+            background: #764ba2;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+        
+        @media (max-width: 600px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .book-item {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1> My <span>Book</span> Library</h1>
+
+        <!-- Add Book Form -->
+        <form id="bookForm">
+            <h3> Add New Book</h3>
+            <div class="form-row">
+                <input type="text" id="title" placeholder="Book Title" required>
+                <input type="text" id="author" placeholder="Author Name" required>
+                <input type="number" id="year" placeholder="Year (e.g., 2020)" required>
+                <input type="text" id="genre" placeholder="Genre (e.g., Fiction)" required>
+            </div>
+            <button type="submit" class="btn">Add Book to Library</button>
+        </form>
+
+        <!-- Book List -->
+        <div style="margin-top: 30px;">
+            <span class="count" id="bookCount">0 Books</span>
+            <div id="bookList" class="book-list">
+                <div class="empty-msg"> No books in your library yet.<br>Add your first book above!</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api/books';
+
+        // Load all books
+        async function loadBooks() {
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                const bookList = document.getElementById('bookList');
+                const countElement = document.getElementById('bookCount');
+
+                if (data.count === 0) {
+                    bookList.innerHTML = `<div class="empty-msg"> No books in your library yet.<br>Add your first book above!</div>`;
+                    countElement.textContent = '0 Books';
+                    return;
+                }
+
+                countElement.textContent = `${data.count} Book${data.count > 1 ? 's' : ''}`;
+                bookList.innerHTML = data.data.map(book => `
+                    <div class="book-item">
+                        <div class="book-info">
+                            <h4>${book.title}</h4>
+                            <p> ${book.author} | ${book.year} | ${book.genre}</p>
+                        </div>
+                        <button class="delete-btn" onclick="deleteBook(${book.id})">🗑️ Delete</button>
+                    </div>
+                `).join('');
+
+            } catch (error) {
+                document.getElementById('bookList').innerHTML = 
+                    '<div class="empty-msg" style="color: red;"> Server not running! Start with: npm run dev</div>';
+            }
+        }
+
+        // Add a new book
+        document.getElementById('bookForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const book = {
+                title: document.getElementById('title').value.trim(),
+                author: document.getElementById('author').value.trim(),
+                year: parseInt(document.getElementById('year').value),
+                genre: document.getElementById('genre').value.trim()
+            };
+
+            if (!book.title || !book.author || !book.year || !book.genre) {
+                alert('Please fill all fields!');
+                return;
+            }
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(book)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('' + result.message);
+                    document.getElementById('bookForm').reset();
+                    loadBooks();
+                } else {
+                    alert('' + (result.error || 'Failed to add book'));
+                }
+            } catch (error) {
+                alert('Make sure server is running!');
+            }
+        });
+
+        // Delete a book
+        async function deleteBook(id) {
+            if (!confirm('Delete this book?')) return;
+
+            try {
+                const response = await fetch(`${API_URL}/${id}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('' + result.message);
+                    loadBooks();
+                } else {
+                    alert('' + (result.error || 'Failed to delete book'));
+                }
+            } catch (error) {
+                alert('Make sure server is running!');
+            }
+        }
+
+        // Load books on page load
+        loadBooks();
+    </script>
+</body>
+</html>
